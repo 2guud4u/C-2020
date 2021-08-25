@@ -1,0 +1,224 @@
+//
+// final.cpp
+//
+// Jia Jiang
+// 7/28/20
+// CS14D final project
+// Do banking stuff like charge, add account, and credits
+
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+
+using namespace std;
+
+struct ACCOUNTS
+{
+    int num;
+    string name;
+    double balance, credit;
+};
+int spacing( ofstream &fout)
+{
+    fout << endl << "-----------------------------------------------------\n";
+    return 0;
+}
+void exchange( int i, int j , ACCOUNTS d[] )
+{
+    ACCOUNTS g[2];
+    g[0]= d[i];
+    d[i] = d[j];
+    d[j] = g[0];
+    return;
+}
+int RippleSort( ACCOUNTS d[], int n )
+{
+    int i, j;
+    for( i = 0; i < n-1; i++ )
+    {
+        for( j = i+1; j < n; j++ )
+        {
+            if( d[i].num > d[j].num )
+            {
+                exchange(i , j, d);
+            }
+        }
+    }
+    return 0;
+}
+int binsearch( ACCOUNTS d[], int n, int k )
+{
+    int lo = 0, hi = n - 1, mid;
+    bool found = false;
+    while( !found && lo <= hi )
+    {
+        mid = ( lo + hi ) / 2;
+        if( d[mid].num == k )
+        {
+            found = true;
+        }
+        else if( d[mid].num > k )
+        {
+            hi = mid - 1;
+        }
+        else
+        {
+            lo = mid + 1;
+        }
+    }
+    return found ? mid : -1;
+}
+//print 1 single account
+int print(ACCOUNTS d[], int i, ofstream &fout)
+{
+    fout << setw(10) <<d[i].num << setw(10) << d[i].name << setw(10)
+         << d[i].balance << setw(10) << showpoint << fixed << setprecision(2)
+         << d[i].credit << showpoint << fixed << setprecision(2) << endl;
+         return 0;
+}
+int A(int &i, ACCOUNTS d[], ifstream &fin, ofstream &fout)
+{
+     int n = i, j = 0;
+     ACCOUNTS t[2];
+     // check if account was added already
+     fin >> t[0].num >> t[0].name >> t[0].balance >> t[0].credit;
+     while (j < n)
+     {
+         if (d[j].num != t[0].num)
+         {
+             j++;
+         }
+         else
+         {
+             i -= 1;
+             spacing(fout);
+             fout << "ACCOUNT NUM ALREADY EXISTS, ACCOUNT NOT ADDED\n";
+             spacing(fout);
+             return 0;
+         }
+     }
+     fout << "ACCOUNT ADDED:\n";
+     d[i] = t[0];
+     print(d, i, fout);
+     return 0;
+}
+int P(ACCOUNTS d[], ifstream &fin, int i, ofstream &fout)
+{
+     int num, pay, n;
+     fin >> num >> pay;
+     n = binsearch(d, i, num);
+     if (n == -1)
+     {
+         fout << "Account doesn't exist so payment was invalid" << endl;
+         spacing(fout);
+     }
+     else
+     {
+         spacing(fout);
+         fout << "OLD RECORD:" << endl;
+         print(d, n, fout);
+         d[n].balance -= pay;
+         fout << "NEW RECORD AFTER PAYMENT:" << endl;
+         print(d, n, fout);
+         spacing(fout);
+     }
+     return 0;
+}
+int C(ACCOUNTS d[], ifstream &fin, int i, ofstream &fout)
+{
+    int num, charge, n, check;
+     fin >> num >> charge;
+     n = binsearch(d, i, num);
+     if (n == -1)
+     {
+         fout << "Account doesn't exist so payment was invalid" << endl;
+         spacing(fout);
+     }
+     else
+     {
+         check = d[n].balance;
+         if (charge <= d[n].credit - check)
+         {
+            spacing(fout);
+            fout << "OLD RECORD" << endl;
+            print(d, n, fout);
+            d[n].balance += charge;
+            fout << "NEW RECORD AFTER CHARGE:" << endl;
+            print(d, n, fout);
+            spacing(fout);
+         }
+         else
+         {
+             spacing(fout);
+             fout << "Transaction canceled because it went over limit" << endl;
+             spacing(fout);
+         }
+     }
+     return 0;
+}
+//print all added accounts
+int Q(ACCOUNTS d[], ifstream &fin, int n, ofstream &fout)
+{
+    int i = 0;
+    spacing(fout);
+    fout << "UPDATED ACCOUNTS LIST:\n";
+    while(i <= n)
+    {
+        print(d, i, fout);
+        i++;
+    }
+    spacing(fout);
+    return 0;
+}
+int read(ACCOUNTS d[], ifstream &fin, ofstream &fout)
+{
+    bool finish;
+    int i = -1;
+    char tran;
+    while (fin >> tran)
+    {
+        finish = false;
+        switch (tran)
+        {
+            case 'A':
+                i++;
+                A(i, d, fin, fout);
+                RippleSort(d, i+1);
+            break;
+            case 'P':
+                P(d, fin, i+1, fout);
+                break;
+            case 'C':
+                C(d, fin, i+1, fout);
+                break;
+            case 'Q':
+                Q(d, fin, i, fout);
+                finish = true;
+                break;
+        }
+    }
+    if (!finish)
+        {
+            Q(d, fin, i, fout);
+        }
+    return 0;
+}
+int main()
+{
+    ACCOUNTS d[100];
+    string out, in;
+    cout << "Enter input file:";
+    cin >> in;
+    cout << "\nEnter output file:";
+    cin >> out;
+    ofstream fout(out);
+    ifstream fin(in);
+    if( !fin )
+    {
+        cout << "Error opening file!\n" << flush;
+        return -1;
+    }
+    read (d, fin, fout);
+    fout.close();
+    fin.close();
+}
